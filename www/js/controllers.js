@@ -65,17 +65,22 @@ angular.module('stockMarketApp.controllers', [])
   function($scope, $stateParams, stockDataService) {
 
     $scope.ticker = $stateParams.stockTicker;
+    $scope.chartView = 1;
 
     $scope.$on("$ionicView.afterEnter", function() {
       getPriceData();
       getDetailsData();
     });
 
+    $scope.chartViewFunc = function (tab) {
+      $scope.chartView = tab;
+    };
+
     function getPriceData() {
       var promise = stockDataService.getPriceData($scope.ticker);
 
       promise.then(function(data) {
-        console.log(data);
+        $scope.stockPriceData = data;
       });
     }
 
@@ -83,7 +88,7 @@ angular.module('stockMarketApp.controllers', [])
       var promise = stockDataService.getDetailsData($scope.ticker);
 
       promise.then(function(data) {
-        console.log(data);
+        $scope.stockDetailsData = data;
       });
     }
 
