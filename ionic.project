@@ -1,6 +1,6 @@
 {
   "name": "stockMarketApp",
-  "app_id": "",
+  "app_id": "9b88830d",
   "gulpStartupTasks": [
     "sass",
     "watch"

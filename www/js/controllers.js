@@ -99,8 +99,6 @@ angular.module('stockMarketApp.controllers', [])
       var promise = chartDataService.getHistoricalData($scope.ticker, $scope.oneYearAgoDate, $scope.todayDate);
 
       promise.then(function(data) {
-
-        console.log(data);
         $scope.myData = JSON.parse(data)
           .map(function(series) {
             series.values = series.values.map(function(d) { return {x: d[0], y: d[1] }; });
@@ -110,7 +108,6 @@ angular.module('stockMarketApp.controllers', [])
     }
 
     var marginBottom = ($window.innerWidth / 100) * 10;
-
 
     	var xTickFormat = function(d) {
     		var dx = $scope.myData[0].values[d] && $scope.myData[0].values[d].x || 0;
@@ -165,6 +162,5 @@ angular.module('stockMarketApp.controllers', [])
         y4AxisTickFormat: y4TickFormat,
         transitionDuration: 500
     	};
-
 
 }]);
