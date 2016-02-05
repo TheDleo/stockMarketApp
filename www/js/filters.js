@@ -36,7 +36,7 @@ angular.module('stockMarketApp.filters', [])
 
       if(number >= 1000) {
         return abs + key;
-      } else if(number <= 1000){
+      } else if(number <= -1000){
         return '-' + abs + key;
       } else {
         return $filter('number')(((isNegative ? '-' : '') + abs + key), 3);
