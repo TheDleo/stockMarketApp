@@ -88,7 +88,8 @@ angular.module('stockMarketApp.services', [])
         .success(function(json) {
           var jsonData = json.query.results.quote;
 
-          var priceData = [], volumeData = [];
+          var priceData = [],
+	  volumeData = [];
 
           jsonData.forEach(function(dayDataObject) {
 
@@ -115,12 +116,12 @@ angular.module('stockMarketApp.services', [])
             '"values":' + '[' + priceData + ']' +
             '}]';
 
-          deferred.resolve(formattedChartData);
-
-        })
-        .error(function(error) {
-          console.log("Chart data error :" + error);
-        });
+        deferred.resolve(formattedChartData);
+      })
+      .error(function(error) {
+        console.log("Chart data error: " + error);
+        deferred.reject();
+      });
 
         return deferred.promise;
 
