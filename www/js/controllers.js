@@ -61,8 +61,8 @@ angular.module('stockMarketApp.controllers', [])
 ])
 
 .controller('StockCtrl', [
-  '$scope', '$stateParams', '$window', '$ionicPopup', 'stockDataService', 'dateService', 'chartDataService', 'notesService',
-  function($scope, $stateParams, $window, $ionicPopup, stockDataService, dateService, chartDataService, notesService) {
+  '$scope', '$stateParams', '$window', '$ionicPopup', 'stockDataService', 'dateService', 'chartDataService', 'notesService', 'newsService',
+  function($scope, $stateParams, $window, $ionicPopup, stockDataService, dateService, chartDataService, notesService, newsService) {
 
     $scope.ticker = $stateParams.stockTicker;
     $scope.chartView = 4;
@@ -74,8 +74,14 @@ angular.module('stockMarketApp.controllers', [])
       getPriceData();
       getDetailsData();
       getChartData();
+      getNews();
       $scope.stockNotes = notesService.getNotes($scope.ticker);
     });
+
+    $scope.openWindow = function(link) {
+      //TODO install and set up In App browser
+      console.log("openWindow: " + link);
+    };
 
     $scope.chartViewFunc = function (tab) {
       $scope.chartView = tab;
@@ -146,6 +152,16 @@ angular.module('stockMarketApp.controllers', [])
         $scope.stockNotes = notesService.getNotes($scope.ticker);
       });
     };
+
+    function getNews() {
+      $scope.newsStories = [];
+
+      var promise = newsService.getNews($scope.ticker);
+
+      promise.then(function(data) {
+        $scope.newsStories = data;
+      });
+    }
 
     function getPriceData() {
       var promise = stockDataService.getPriceData($scope.ticker);
