@@ -49,13 +49,14 @@ angular.module('stockMarketApp.controllers', [])
 ])
 
 .controller('StockCtrl', [
-  '$scope', '$stateParams', '$window', '$ionicPopup', 'stockDataService', 'dateService', 'chartDataService', 'notesService', 'newsService',
-  function($scope, $stateParams, $window, $ionicPopup, stockDataService, dateService, chartDataService, notesService, newsService) {
+  '$scope', '$stateParams', '$window', '$ionicPopup', 'followStockService', 'stockDataService', 'dateService', 'chartDataService', 'notesService', 'newsService',
+  function($scope, $stateParams, $window, $ionicPopup, followStockService, stockDataService, dateService, chartDataService, notesService, newsService) {
 
     $scope.ticker = $stateParams.stockTicker;
     $scope.chartView = 4;
     $scope.oneYearAgoDate = dateService.oneYearAgoDate();
     $scope.todayDate = dateService.currentDate();
+    $scope.following = followStockService.checkFollowing($scope.ticker);
     $scope.stockNotes = [];
 
     $scope.$on("$ionicView.afterEnter", function() {
@@ -65,6 +66,16 @@ angular.module('stockMarketApp.controllers', [])
       getNews();
       $scope.stockNotes = notesService.getNotes($scope.ticker);
     });
+
+    $scope.toggleFollow = function() {
+      if($scope.following) {
+        followStockService.unfollow($scope.ticker);
+        $scope.following = false;
+      } else {
+        followStockService.follow($scope.ticker);
+        $scope.following = true;
+      }
+    };
 
     $scope.openWindow = function(link) {
       //TODO install and set up In App browser
@@ -158,9 +169,9 @@ angular.module('stockMarketApp.controllers', [])
         $scope.stockPriceData = data;
 
         if (data.chg_percent >= 0 && data.chg_percent !== null) {
-          $scope.reactiveColor = {'background-color' : '#33cd5f'};
+          $scope.reactiveColor = {'background-color' : '#33cd5f', 'border-color': 'rgba(255,255,255,.3)'};
         } else if (data.chg_percent < 0 && data.chg_percent !== null) {
-          $scope.reactiveColor = {'background-color' : '#ef473a'};
+          $scope.reactiveColor = {'background-color' : '#ef473a', 'border-color': 'rgba(0,0,0,.2)'};
         }
 
       });
