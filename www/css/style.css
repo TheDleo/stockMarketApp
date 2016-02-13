@@ -261,6 +261,14 @@ market-data-card .col-20 {
   text-align: center !important;
 }
 
+.text-uppercase {
+  text-transform: uppercase !important;
+}
+
+.text-capitalize {
+  text-transform: capitalize !important;
+}
+
 /*Adjustment Styles*/
 
 svg text {
