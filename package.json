@@ -11,7 +11,10 @@
   },
   "devDependencies": {
     "bower": "^1.3.3",
+    "grunt-karma": "*",
     "gulp-util": "^2.2.14",
+    "karma-jasmine": "*",
+    "karma-phantomjs-launcher": "*",
     "shelljs": "^0.3.0"
   },
   "cordovaPlugins": [],

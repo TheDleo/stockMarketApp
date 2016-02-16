@@ -113,6 +113,24 @@ angular.module('stockMarketApp.services', [])
 
 }])
 
+.factory('stockPriceCacheService', ['CacheFactory', function(CacheFactory) {
+
+  var stockPriceCache;
+
+  if(!CacheFactory.get('stockPriceCache')) {
+    stockPriceCache = CacheFactory('stockPriceCache', {
+      maxAge: 60 * 60 * 8 * 1000,
+      deleteOnExpire: 'aggressive',
+      storageMode: 'localStorage'
+    });
+  } else {
+    stockPriceCache = CacheFactory.get('stockPriceCache');
+  }
+
+  return stockPriceCache;
+
+}])
+
 .factory('priceDataCacheService', ['CacheFactory', function(CacheFactory){
   var priceDataCache;
 
@@ -235,7 +253,8 @@ angular.module('stockMarketApp.services', [])
     };
 }])
 
-.factory('stockDataService', ['$q', '$http', 'encodeURIService', 'stockDetailsCacheService', 'priceDataCacheService', function($q, $http, encodeURIService, stockDetailsCacheService, priceDataCacheService) {
+.factory('stockDataService', ['$q', '$http', 'encodeURIService', 'stockDetailsCacheService', 'stockPriceCacheService',
+  function($q, $http, encodeURIService, stockDetailsCacheService, stockPriceCacheService) {
   var getDetailsData = function(ticker) {
 
     var deferred = $q.defer(),
@@ -269,23 +288,18 @@ angular.module('stockMarketApp.services', [])
 
     var deferred = $q.defer(),
     cacheKey = ticker,
-    priceDataCache = priceDataCacheService.get(cacheKey),
     url = "http://finance.yahoo.com/webservice/v1/symbols/" + ticker + "/quote?format=json&view=detail";
 
-    if(priceDataCache) {
-      deferred.resolve(priceDataCache);
-    } else {
       $http.get(url)
         .success(function(json) {
           var jsonData = json.list.resources[0].resource.fields;
           deferred.resolve(jsonData);
-          priceDataCacheService.put(cacheKey, jsonData);
+          stockPriceCacheService.put(cacheKey, jsonData);
         })
         .error(function(error) {
           console.log("Price data error: " + error);
           deferred.reject();
         });
-    }
 
     return deferred.promise;
 

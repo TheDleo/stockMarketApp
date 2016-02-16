@@ -7,22 +7,48 @@ angular.module('stockMarketApp.controllers', [])
 
 }])
 
-.controller('MyStocksCtrl', ['$scope', 'myStocksArrayService',
-  function($scope, myStocksArrayService) {
-    $scope.myStocksArray = myStocksArrayService;
-  }
-])
+.controller('MyStocksCtrl', ['$scope', 'myStocksArrayService', 'stockDataService', 'stockPriceCacheService', 'followStockService',
+  function($scope, myStocksArrayService, stockDataService, stockPriceCacheService, followStockService) {
+    $scope.$on("$ionicView.afterEnter", function() {
+      $scope.getMyStocksData();
+    });
 
-.controller('StockCtrl', [
-  '$scope', '$stateParams', '$window', '$ionicPopup', 'followStockService', 'stockDataService', 'dateService', 'chartDataService', 'notesService', 'newsService',
-  function($scope, $stateParams, $window, $ionicPopup, followStockService, stockDataService, dateService, chartDataService, notesService, newsService) {
+    $scope.getMyStocksData = function() {
+
+      myStocksArrayService.forEach(function(stock) {
+        var promise = stockDataService.getPriceData(stock.ticker);
+
+        $scope.myStocksData = [];
+
+        promise.then(function(data) {
+          $scope.myStocksData.push(stockPriceCacheService.get(data.symbol));
+        });
+      });
+      $scope.$broadcast('scroll.refreshComplete');
+    };
+
+    $scope.unfollowStock = function(ticker) {
+      followStockService.unfollow(ticker);
+      $scope.getMyStocksData();
+    };
+
+  }])
+
+
+
+.controller('StockCtrl', ['$scope', '$stateParams', '$window', '$ionicPopup', 'followStockService', 'stockDataService', 'chartDataService', 'dateService', 'notesService', 'newsService',
+  function($scope, $stateParams, $window, $ionicPopup, followStockService, stockDataService, chartDataService, dateService, notesService, newsService) {
 
     $scope.ticker = $stateParams.stockTicker;
-    $scope.chartView = 4;
+    $scope.stockNotes = [];
+
+    $scope.following = followStockService.checkFollowing($scope.ticker);
     $scope.oneYearAgoDate = dateService.oneYearAgoDate();
     $scope.todayDate = dateService.currentDate();
-    $scope.following = followStockService.checkFollowing($scope.ticker);
-    $scope.stockNotes = [];
+
+    // default chart setting
+    $scope.chartView = 4;
+
 
     $scope.$on("$ionicView.afterEnter", function() {
       getPriceData();
@@ -31,6 +57,11 @@ angular.module('stockMarketApp.controllers', [])
       getNews();
       $scope.stockNotes = notesService.getNotes($scope.ticker);
     });
+
+
+    $scope.chartViewFunc = function(n) {
+      $scope.chartView = n;
+    };
 
     $scope.toggleFollow = function() {
       if($scope.following) {
@@ -43,12 +74,8 @@ angular.module('stockMarketApp.controllers', [])
     };
 
     $scope.openWindow = function(link) {
-      //TODO install and set up In App browser
-      console.log("openWindow: " + link);
-    };
-
-    $scope.chartViewFunc = function (tab) {
-      $scope.chartView = tab;
+      //TODO install and set up inAppBrowser
+      console.log("openWindow –> " + link);
     };
 
     $scope.addNote = function() {
@@ -117,15 +144,6 @@ angular.module('stockMarketApp.controllers', [])
       });
     };
 
-    function getNews() {
-      $scope.newsStories = [];
-
-      var promise = newsService.getNews($scope.ticker);
-
-      promise.then(function(data) {
-        $scope.newsStories = data;
-      });
-    }
 
     function getPriceData() {
       var promise = stockDataService.getPriceData($scope.ticker);
@@ -133,9 +151,10 @@ angular.module('stockMarketApp.controllers', [])
       promise.then(function(data) {
         $scope.stockPriceData = data;
 
-        if (data.chg_percent >= 0 && data.chg_percent !== null) {
-          $scope.reactiveColor = {'background-color' : '#33cd5f', 'border-color': 'rgba(255,255,255,.3)'};
-        } else if (data.chg_percent < 0 && data.chg_percent !== null) {
+        if(data.chg_percent >= 0 && data !== null) {
+          $scope.reactiveColor = {'background-color': '#33cd5f', 'border-color': 'rgba(255,255,255,.3)'};
+        }
+        else if(data.chg_percent < 0 && data !== null) {
           $scope.reactiveColor = {'background-color' : '#ef473a', 'border-color': 'rgba(0,0,0,.2)'};
         }
 
@@ -162,69 +181,87 @@ angular.module('stockMarketApp.controllers', [])
       });
     }
 
+    function getNews() {
+
+      $scope.newsStories = [];
+
+      var promise = newsService.getNews($scope.ticker);
+
+      promise.then(function(data) {
+        $scope.newsStories = data;
+      });
+    }
+
+
+    // chart option functions
+    // top chart x axis
+  	var xTickFormat = function(d) {
+  		var dx = $scope.myData[0].values[d] && $scope.myData[0].values[d].x || 0;
+  		if (dx > 0) {
+        return d3.time.format("%b %d")(new Date(dx));
+  		}
+  		return null;
+  	};
+
+    // bottom chart x axis
+    var x2TickFormat = function(d) {
+      var dx = $scope.myData[0].values[d] && $scope.myData[0].values[d].x || 0;
+      return d3.time.format('%b %Y')(new Date(dx));
+    };
+
+
+    var y1TickFormat = function(d) {
+      return d3.format(',f')(d);
+    };
+
+    // top chart y axis price
+    var y2TickFormat = function(d) {
+      return d3.format('s')(d);
+    };
+
+    // bottom chart y axis volume
+    var y3TickFormat = function(d) {
+      return d3.format(',.2s')(d);
+    };
+
+    var y4TickFormat = function(d) {
+      return d3.format(',.2s')(d);
+    };
+
+    var xValueFunction = function(d, i) {
+      return i;
+    };
+
     var marginBottom = ($window.innerWidth / 100) * 10;
 
-    	var xTickFormat = function(d) {
-    		var dx = $scope.myData[0].values[d] && $scope.myData[0].values[d].x || 0;
-    		if (dx > 0) {
-          return d3.time.format("%b %d")(new Date(dx));
-    		}
-    		return null;
-    	};
-
-      var x2TickFormat = function(d) {
-        var dx = $scope.myData[0].values[d] && $scope.myData[0].values[d].x || 0;
-        return d3.time.format('%b %Y')(new Date(dx));
-      };
-
-      var y1TickFormat = function(d) {
-        return d3.format('s')(d);
-      };
-
-      var y2TickFormat = function(d) {
-        return d3.format(',.2f')(d);
-      };
-
-      var y3TickFormat = function(d) {
-        return d3.format(',.2s')(d);
-      };
-
-      var y4TickFormat = function(d) {
-        return d3.format(',.2s')(d);
-      };
-
-      var xValueFunction = function(d, i) {
-        return i;
-      };
-
-    	$scope.chartOptions = {
-        chartType: 'linePlusBarWithFocusChart',
-        data: 'myData',
-        margin: {top: 15, right: 0, bottom: marginBottom, left: 0},
-        interpolate: "cardinal",
-        useInteractiveGuideline: true,
-        yShowMaxMin: false,
-        tooltips: false,
-        showLegend: false,
-        userVoronoi: false,
-        xShowMaxMin: false,
-        xValue: xValueFunction,
-        xAxisTickFormat: xTickFormat,
-        x2AxisTickFormat: x2TickFormat,
-        y1AxisTickFormat: y1TickFormat,
-        y2AxisTickFormat: y2TickFormat,
-        y3AxisTickFormat: y3TickFormat,
-        y4AxisTickFormat: y4TickFormat,
-        transitionDuration: 500,
-        y1AxisLabel: 'Price',
-        y3AxisLabel: 'Volume',
-        noData: 'Loading data...'
-    	};
+  	$scope.chartOptions = {
+      chartType: 'linePlusBarWithFocusChart',
+      data: 'myData',
+      margin: {top: 15, right: 0, bottom: marginBottom, left: 0},
+      interpolate: "cardinal",
+      useInteractiveGuideline: false,
+      yShowMaxMin: false,
+      tooltips: false,
+      showLegend: false,
+      useVoronoi: false,
+      xShowMaxMin: false,
+      xValue: xValueFunction,
+      xAxisTickFormat: xTickFormat,
+      x2AxisTickFormat: x2TickFormat,
+      y1AxisTickFormat: y1TickFormat,
+      y2AxisTickFormat: y2TickFormat,
+      y3AxisTickFormat: y3TickFormat,
+      y4AxisTickFormat: y4TickFormat,
+      transitionDuration: 500
+  	};
 
 }])
 
+
+
 .controller('SearchCtrl', ['$scope', '$state', 'modalService', 'searchService',
   function($scope, $state, modalService, searchService) {
+
     $scope.closeModal = function() {
       modalService.closeModal();
     };
@@ -239,13 +276,12 @@ angular.module('stockMarketApp.controllers', [])
         .then(function(data) {
           $scope.searchResults = data;
         });
-    }, 750);
+    }, 400);
 
     $scope.goToStock = function(ticker) {
       modalService.closeModal();
       $state.go('app.stock', {stockTicker: ticker});
     };
-
 }])
 
 ;
