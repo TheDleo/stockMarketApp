@@ -324,10 +324,21 @@ angular.module('stockMarketApp.services', [])
   return firebaseRef;
 }])
 
-.factory('userService', ['firebaseRef', function(firebaseRef){
+.factory('userService', ['$rootScope', 'firebaseRef', 'modalService',
+  function($rootScope, firebaseRef, modalService){
 
-  var login = function(user) {
-
+    var login = function(user) {
+      firebaseRef.authWithPassword({
+        email    : user.email,
+        password : user.password
+      }, function(error, authData) {
+        if (error) {
+          console.log("Login Failed!", error);
+        } else {
+          $rootScope.currentUser = user;
+          modalService.closeModal();
+        }
+      });
   };
 
   var signup = function(user) {
@@ -338,14 +349,24 @@ angular.module('stockMarketApp.services', [])
       if (error) {
         console.log("Error creating user:", error);
       } else {
-        console.log("Successfully created user account with uid:", userData.uid);
+        login(user);
+        firebaseRef.child('emails').push(user.email);
       }
     });
   };
 
   var logout = function() {
-
+    firebaseRef.unauth();
+    $rootScope.currentUser = '';
   };
+
+  var getUser = function() {
+    return firebaseRef.getAuth();
+  };
+
+  if(getUser()) {
+    $rootScope.currentUser = getUser();
+  }
 
   return {
     login: login,
