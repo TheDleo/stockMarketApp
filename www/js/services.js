@@ -1,5 +1,7 @@
 angular.module('stockMarketApp.services', [])
 
+.constant('FIREBASE_URL', 'https://dleo.firebaseio.com/')
+
 .factory('encodeURIService', function() {
   return {
     encode: function(string) {
@@ -26,19 +28,22 @@ angular.module('stockMarketApp.services', [])
     } else if (id ===2) {
 
       $ionicModal.fromTemplateUrl('templates/login.html', {
-        scope: $scope
+        scope: null,
+        controller: 'LoginSignupCtrl'
       }).then(function(modal) {
-        $scope.modal = modal;
+        _this.modal = modal;
+        _this.modal.show();
       });
 
     } else if (id ===3) {
 
-      $ionicModal.fromTemplateUrl('templates/login.html', {
-        scope: $scope
+      $ionicModal.fromTemplateUrl('templates/signup.html', {
+        scope: null,
+        controller: 'LoginSignupCtrl'
       }).then(function(modal) {
-        $scope.modal = modal;
+        _this.modal = modal;
+        _this.modal.show();
       });
-
     }
 
   };
@@ -310,6 +315,43 @@ angular.module('stockMarketApp.services', [])
       getDetailsData: getDetailsData
     };
 
+}])
+
+.factory('firebaseRef', ['$firebase', 'FIREBASE_URL', function($firebase, FIREBASE_URL){
+
+  var firebaseRef = new Firebase(FIREBASE_URL);
+
+  return firebaseRef;
+}])
+
+.factory('userService', ['firebaseRef', function(firebaseRef){
+
+  var login = function(user) {
+
+  };
+
+  var signup = function(user) {
+    firebaseRef.createUser({
+      email    : user.email,
+      password : user.password
+    }, function(error, userData) {
+      if (error) {
+        console.log("Error creating user:", error);
+      } else {
+        console.log("Successfully created user account with uid:", userData.uid);
+      }
+    });
+  };
+
+  var logout = function() {
+
+  };
+
+  return {
+    login: login,
+    signup: signup,
+    logout: logout
+  };
 }])
 
 .factory('chartDataService', ['$q', '$http', 'encodeURIService', 'chartDataCacheService', function($q, $http, encodeURIService, chartDataCacheService) {
