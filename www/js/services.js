@@ -168,6 +168,22 @@ angular.module('stockMarketApp.services', [])
   return notesCache;
 }])
 
+.factory('newsCacheService', ['CacheFactory', function(CacheFactory) {
+  var newsCache;
+
+  if(!CacheFactory.get('newsCache')) {
+      newsCache = CacheFactory('newsCache', {
+        maxAge: 60 * 60 * 8 * 1000,
+        deleteOnExpire: 'aggressive',
+        storageMode: 'localStorage'
+      });
+  } else {
+    newsCache = CacheFactory.get('newsCache');
+  }
+
+  return newsCache;
+}])
+
 .factory('fillMyStocksCacheService', ['CacheFactory', function(CacheFactory) {
 
   var myStocksCache;
@@ -302,8 +318,12 @@ angular.module('stockMarketApp.services', [])
 
     var deferred = $q.defer(),
     cacheKey = ticker,
+    stockPriceCache = stockPriceCacheService.get(cacheKey),
     url = "http://finance.yahoo.com/webservice/v1/symbols/" + ticker + "/quote?format=json&view=detail";
 
+    if(stockPriceCache) {
+      deferred.resolve(stockPriceCache);
+    } else {
       $http.get(url)
         .success(function(json) {
           var jsonData = json.list.resources[0].resource.fields;
@@ -314,6 +334,7 @@ angular.module('stockMarketApp.services', [])
           console.log("Price data error: " + error);
           deferred.reject();
         });
+    }
 
     return deferred.promise;
 
@@ -566,25 +587,32 @@ angular.module('stockMarketApp.services', [])
   };
 }])
 
-.factory('newsService', ['$q', '$http', function($q, $http) {
+.factory('newsService', ['$q', '$http', 'newsCacheService', function($q, $http, newsCacheService) {
   return {
+
     getNews: function(ticker) {
       var deferred = $q.defer(),
         x2js = new X2JS(),
+        cacheKey = ticker,
+        newsCache = newsCacheService.get(cacheKey),
         url = 'http://finance.yahoo.com/rss/headline?s=' + ticker;
 
-        $http.get(url)
-          .success(function(xml) {
-            var xmlDoc = x2js.parseXmlString(xml),
-            json = x2js.xml2json(xmlDoc),
-            jsonData = json.rss.channel.item;
-
-            deferred.resolve(jsonData);
-          })
-          .error(function(e) {
-            console.log('News error: ' + e);
-            deferred.reject();
-          });
+        if(newsCache) {
+          deferred.resolve(newsCache);
+        } else {
+          $http.get(url)
+            .success(function(xml) {
+              var xmlDoc = x2js.parseXmlString(xml),
+              json = x2js.xml2json(xmlDoc),
+              jsonData = json.rss.channel.item;
+              newsCacheService.put(cacheKey, jsonData);
+              deferred.resolve(jsonData);
+            })
+            .error(function(e) {
+              console.log('News error: ' + e);
+              deferred.reject();
+            });
+        }
 
         return deferred.promise;
     }
